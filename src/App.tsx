@@ -1,40 +1,109 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useRef } from 'react';
-import { motion, useInView, AnimatePresence } from 'motion/react';
+import React, { useRef, useState } from 'react';
+import { AnimatePresence, motion, useInView } from 'motion/react';
 import {
-  Terminal,
-  Menu,
-  X,
-  UserSearch,
-  Construction,
-  MessageSquare,
-  Handshake,
-  Code,
-  Palette,
-  Lightbulb,
   Brain,
-  Github,
-  Twitter,
   CheckCircle,
-  Loader2
+  Code,
+  Github,
+  Handshake,
+  Lightbulb,
+  Loader2,
+  Mail,
+  MapPin,
+  Menu,
+  Palette,
+  Rocket,
+  UserSearch,
+  X,
 } from 'lucide-react';
+import buildersClubLogo from './assets/builders-club-logo.png';
 
-type BaseProps = { children: React.ReactNode; className?: string; [key: string]: unknown };
+type BaseProps = {
+  children: React.ReactNode;
+  className?: string;
+};
 
-// ── Reusable fade-in-up wrapper ──────────────────────────────────────────────
-const FadeInUp = ({ children, delay = 0, className = '' }: BaseProps & { delay?: number }) => {
-  const ref = useRef(null);
+type ApplicationForm = {
+  name: string;
+  email: string;
+  university: string;
+  city: string;
+  skills: string;
+  interests: string;
+  portfolio: string;
+  motivation: string;
+};
+
+const navLinks = [
+  { href: '#program', label: 'Program' },
+  { href: '#criteria', label: 'Criteria' },
+  { href: '#apply', label: 'Apply' },
+];
+
+const problemCards = [
+  {
+    icon: UserSearch,
+    title: 'Good cofounders are fragmented',
+    desc: 'Strong builders sit in different campuses, clubs, and majors, so the right people rarely meet at the right moment.',
+  },
+  {
+    icon: Rocket,
+    title: 'Momentum dies without structure',
+    desc: 'Most student teams start with energy, then stall because there is no rhythm for shipping, testing, and accountability.',
+  },
+  {
+    icon: Handshake,
+    title: 'Feedback is usually too soft',
+    desc: 'Friends are supportive, but startups need sharper feedback loops from people who actually build and validate products.',
+  },
+];
+
+const stepCards = [
+  {
+    step: '01',
+    title: 'Apply',
+    desc: 'Share what you build, what you want to work on, and the kind of teammates you want beside you.',
+  },
+  {
+    step: '02',
+    title: 'Get matched',
+    desc: 'We use skills, ambition, and working style to connect founders who can actually build together.',
+  },
+  {
+    step: '03',
+    title: 'Ship weekly',
+    desc: 'Inside the cohort, you build in public, get feedback fast, and move from idea to prototype quickly.',
+  },
+];
+
+const criteriaCards = [
+  { icon: Code, label: 'Developers' },
+  { icon: Palette, label: 'Designers' },
+  { icon: Lightbulb, label: 'Product thinkers' },
+  { icon: Brain, label: 'Problem solvers' },
+];
+
+const initialForm: ApplicationForm = {
+  name: '',
+  email: '',
+  university: '',
+  city: '',
+  skills: '',
+  interests: '',
+  portfolio: '',
+  motivation: '',
+};
+
+const FadeInUp = ({ children, className = '' }: BaseProps) => {
+  const ref = useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
+
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 32 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       className={className}
     >
       {children}
@@ -42,524 +111,425 @@ const FadeInUp = ({ children, delay = 0, className = '' }: BaseProps & { delay?:
   );
 };
 
-// ── Slide in from left/right ─────────────────────────────────────────────────
-const SlideIn = ({ children, from = 'left', delay = 0, className = '' }: BaseProps & { from?: 'left' | 'right'; delay?: number }) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-80px' });
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, x: from === 'left' ? -60 : 60 }}
-      animate={inView ? { opacity: 1, x: 0 } : {}}
-      transition={{ duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-// ── Stagger container ────────────────────────────────────────────────────────
-const StaggerContainer = ({ children, className = '' }: BaseProps) => {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
-  return (
-    <motion.div
-      ref={ref}
-      initial="hidden"
-      animate={inView ? 'visible' : 'hidden'}
-      variants={{ visible: { transition: { staggerChildren: 0.12 } } }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
-};
-
-const StaggerItem = ({ children, className = '' }: BaseProps) => (
-  <motion.div
-    variants={{
-      hidden: { opacity: 0, y: 30 },
-      visible: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } }
-    }}
-    className={className}
-  >
-    {children}
-  </motion.div>
-);
-
-// ── Navbar ───────────────────────────────────────────────────────────────────
-const Navbar = () => {
+function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
-    <nav className="fixed top-0 w-full z-50 bg-background/60 backdrop-blur-xl border-b border-white/5">
-      <div className="flex justify-between items-center px-6 py-4 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3">
-          <Terminal className="text-primary w-6 h-6" />
-          <span className="text-xl font-black tracking-tighter text-primary uppercase font-sans">PILOT_LAB</span>
-        </div>
-        <div className="hidden md:flex items-center gap-8">
-          {['#program', '#criteria'].map((href, i) => (
-            <motion.a
-              key={href}
-              href={href}
-              whileHover={{ y: -1 }}
-              className="text-muted hover:text-primary transition-colors duration-200 font-display text-sm uppercase tracking-widest relative group"
-            >
-              {['The Program', 'Criteria'][i]}
-              <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-primary group-hover:w-full transition-all duration-300" />
-            </motion.a>
+    <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-background/78 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        <a href="#top" className="flex min-w-0 items-center gap-3">
+          <img src={buildersClubLogo} alt="Builders Club logo" className="h-11 w-11 rounded-xl bg-white/5 object-contain p-1.5" />
+          <div className="min-w-0">
+            <p className="truncate text-xs font-display uppercase tracking-[0.28em] text-primary/80">Builders Club</p>
+            <p className="truncate text-base font-black tracking-tight text-white sm:text-lg">Buildr</p>
+          </div>
+        </a>
+
+        <div className="hidden items-center gap-7 md:flex">
+          {navLinks.map(({ href, label }) => (
+            <a key={href} href={href} className="text-sm font-display uppercase tracking-[0.24em] text-muted transition-colors hover:text-white">
+              {label}
+            </a>
           ))}
-          <motion.a
-            href="#apply"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-6 py-2 bg-primary text-background rounded-full font-bold text-sm hover:bg-primary-dark transition-colors duration-200"
-          >
-            Apply
-          </motion.a>
         </div>
-        <button className="md:hidden text-primary" onClick={() => setMobileOpen(o => !o)}>
-          {mobileOpen ? <X className="w-6 h-6" /> : <motion.div whileTap={{ scale: 0.85 }}><span className="sr-only">Menu</span><Menu className="w-6 h-6" /></motion.div>}
+
+        <button
+          type="button"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white md:hidden"
+          onClick={() => setMobileOpen((open) => !open)}
+          aria-label="Toggle menu"
+        >
+          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden overflow-hidden bg-background/95 border-b border-white/5"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden border-t border-white/10 bg-background/96 md:hidden"
           >
-            <div className="flex flex-col gap-4 px-6 py-6">
-              <a href="#program" className="text-muted hover:text-primary transition-colors font-display text-sm uppercase tracking-widest" onClick={() => setMobileOpen(false)}>The Program</a>
-              <a href="#criteria" className="text-muted hover:text-primary transition-colors font-display text-sm uppercase tracking-widest" onClick={() => setMobileOpen(false)}>Criteria</a>
-              <a href="#apply" className="px-6 py-3 bg-primary text-background rounded-full font-bold text-sm text-center" onClick={() => setMobileOpen(false)}>Apply</a>
+            <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 sm:px-6">
+              {navLinks.map(({ href, label }) => (
+                <a
+                  key={href}
+                  href={href}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-2xl border border-white/8 bg-white/3 px-4 py-3 text-sm font-display uppercase tracking-[0.2em] text-white/88"
+                >
+                  {label}
+                </a>
+              ))}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
     </nav>
   );
-};
+}
 
-// ── Hero ─────────────────────────────────────────────────────────────────────
-const Hero = () => (
-  <section className="relative min-h-[80vh] flex flex-col items-center justify-center px-6 text-center overflow-hidden">
-    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-      <motion.div
-        animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.15, 0.1] }}
-        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full"
-      />
-      <motion.div
-        animate={{ scale: [1, 1.15, 1], opacity: [0.05, 0.1, 0.05] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        className="absolute -bottom-1/4 -right-1/4 w-[600px] h-[600px] bg-tertiary/5 blur-[120px] rounded-full"
-      />
-    </div>
-
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-      className="relative z-10 max-w-4xl mx-auto"
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface border border-white/5 mb-8"
-      >
-        <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
-        <span className="text-[10px] font-display font-bold uppercase tracking-[0.2em] text-muted">Batch 04 Applications Open</span>
-      </motion.div>
-
-      <motion.h1
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        className="text-5xl md:text-8xl font-black tracking-tight leading-[0.9] text-gradient mb-8"
-      >
-        Find Your Cofounder. <br/> Build Your Startup.
-      </motion.h1>
-
-      <motion.p
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.35 }}
-        className="text-lg md:text-xl text-muted max-w-2xl mx-auto mb-10 leading-relaxed"
-      >
-        A curated community where student builders meet cofounders, validate ideas, and build startups together.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.5 }}
-        className="flex flex-col sm:flex-row items-center justify-center gap-4"
-      >
-        <motion.a
-          href="#apply"
-          whileHover={{ scale: 1.04, boxShadow: '0 0 40px rgba(196,192,255,0.45)' }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary to-primary-dark text-background font-bold rounded-full shadow-[0_0_20px_rgba(196,192,255,0.2)] transition-shadow duration-300"
-        >
-          Apply for the Pilot
-        </motion.a>
-        <motion.a
-          href="#program"
-          whileHover={{ scale: 1.04, backgroundColor: 'rgba(255,255,255,0.07)' }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full sm:w-auto px-8 py-4 bg-surface text-ink font-semibold rounded-full border border-white/10 transition-colors duration-300"
-        >
-          View Curriculum
-        </motion.a>
-      </motion.div>
-    </motion.div>
-  </section>
-);
-
-// ── Problem ──────────────────────────────────────────────────────────────────
-const Problem = () => (
-  <section className="py-24 px-6 bg-surface/30">
-    <div className="max-w-7xl mx-auto">
-      <FadeInUp className="mb-16">
-        <span className="font-display text-primary font-bold tracking-widest text-xs uppercase">The Reality</span>
-        <h2 className="text-4xl md:text-6xl font-black mt-4 tracking-tighter">Why Most Student <br/> Startups Never Start</h2>
-      </FadeInUp>
-
-      <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[
-          { icon: UserSearch, title: "No Cofounders", desc: "Most students build in silos. Great builders are hidden across different campuses and majors, never meeting their match." },
-          { icon: Construction, title: "No Builder Environment", desc: "Coffee shops aren't enough. You need an environment where the default setting is 'shipping' and 'iteration'." },
-          { icon: MessageSquare, title: "No Real Feedback", desc: "Friends will lie to you. You need ruthless, constructive feedback from other builders who understand the struggle." }
-        ].map((item, i) => (
-          <StaggerItem key={i}>
-            <motion.div
-              whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(196,192,255,0.08)' }}
-              className="p-8 bg-surface rounded-xl border border-white/5 hover:border-primary/30 transition-colors duration-300 cursor-default h-full group"
-            >
-              <motion.div whileHover={{ scale: 1.15, rotate: 5 }} transition={{ type: 'spring', stiffness: 300 }}>
-                <item.icon className="w-10 h-10 text-primary mb-6" />
-              </motion.div>
-              <h3 className="text-xl font-bold mb-4">{item.title}</h3>
-              <p className="text-muted leading-relaxed">{item.desc}</p>
-            </motion.div>
-          </StaggerItem>
-        ))}
-      </StaggerContainer>
-    </div>
-  </section>
-);
-
-// ── Solution ─────────────────────────────────────────────────────────────────
-const Solution = () => (
-  <section className="py-32 px-6" id="program">
-    <div className="max-w-7xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <SlideIn from="left" className="lg:col-span-5 flex flex-col justify-center">
-          <span className="font-display text-tertiary font-bold tracking-widest text-xs uppercase">The Solution</span>
-          <h2 className="text-4xl md:text-6xl font-black mt-4 tracking-tighter leading-none mb-8">A Startup Lab <br/> for Students</h2>
-          <p className="text-muted text-lg mb-8 leading-relaxed">We provide the structure, the community, and the network to turn ideas into software.</p>
-        </SlideIn>
-
-        <SlideIn from="right" delay={0.1} className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <motion.div
-            whileHover={{ scale: 1.02, borderColor: 'rgba(196,192,255,0.25)' }}
-            className="md:col-span-2 p-10 bg-surface rounded-xl relative overflow-hidden border border-white/5 transition-colors duration-300 group cursor-default"
-          >
-            <motion.div
-              className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-15 transition-opacity duration-300"
-              animate={{ rotate: [0, 5, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-            >
-              <Handshake className="w-32 h-32" />
-            </motion.div>
-            <div className="relative z-10">
-              <h4 className="text-2xl font-bold mb-4 text-primary">Cofounder Matching</h4>
-              <p className="text-muted max-w-md">Our algorithm and mixer events pair you based on complementary skillsets and shared long-term visions.</p>
-            </div>
-          </motion.div>
-
-          {[
-            { title: 'Build Together', desc: 'Intensive 48-hour sprints and weekly syncs to keep momentum high.' },
-            { title: 'Founder Feedback', desc: 'Direct access to alumni founders and industry mentors for validation.' }
-          ].map((card, i) => (
-            <motion.div
-              key={i}
-              whileHover={{ scale: 1.03, borderColor: 'rgba(196,192,255,0.25)' }}
-              className="p-10 bg-surface rounded-xl relative overflow-hidden border border-white/5 transition-colors duration-300 cursor-default"
-            >
-              <div className="relative z-10">
-                <h4 className="text-2xl font-bold mb-4 text-primary">{card.title}</h4>
-                <p className="text-muted">{card.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </SlideIn>
-      </div>
-    </div>
-  </section>
-);
-
-// ── Program Steps ─────────────────────────────────────────────────────────────
-const ProgramSteps = () => (
-  <section className="py-24 px-6 bg-background border-y border-white/5">
-    <div className="max-w-7xl mx-auto">
-      <FadeInUp className="text-center mb-20">
-        <h2 className="text-4xl md:text-5xl font-black tracking-tighter">The Pilot Program</h2>
-      </FadeInUp>
-
-      <StaggerContainer className="flex flex-col md:flex-row justify-between items-start gap-12 relative">
-        <div className="hidden md:block absolute top-12 left-0 w-full h-px bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0" />
-
-        {[
-          { step: 1, title: "Apply", desc: "Submit your builder profile and portfolio. Show us what you've tinkered with." },
-          { step: 2, title: "Curated Selection", desc: "We hand-pick the top 5% of applicants to ensure a high-density environment of talent." },
-          { step: 3, title: "Builder Sessions", desc: "An 8-week structured program of builds, mixers, and validation sprints." }
-        ].map((item, i) => (
-          <StaggerItem key={i} className="flex-1 relative z-10 group cursor-default">
-            <motion.div
-              whileHover={{ scale: 1.15 }}
-              className="w-12 h-12 rounded-full bg-primary text-background flex items-center justify-center font-black mb-8 shadow-lg shadow-primary/20 transition-shadow duration-300 group-hover:shadow-primary/40"
-            >
-              {item.step}
-            </motion.div>
-            <h4 className="text-xl font-bold mb-4 font-display uppercase tracking-widest">{item.title}</h4>
-            <p className="text-muted">{item.desc}</p>
-          </StaggerItem>
-        ))}
-      </StaggerContainer>
-    </div>
-  </section>
-);
-
-// ── Criteria ──────────────────────────────────────────────────────────────────
-const Criteria = () => (
-  <section className="py-32 px-6" id="criteria">
-    <div className="max-w-4xl mx-auto">
-      <FadeInUp className="text-center mb-16">
-        <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6">Who This Is For</h2>
-        <p className="text-xl text-primary font-medium italic">"You don't need a startup idea yet. You just need the ambition to build."</p>
-      </FadeInUp>
-
-      <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
-        {[
-          { icon: Code, label: "Developers" },
-          { icon: Palette, label: "Designers" },
-          { icon: Lightbulb, label: "Product Thinkers" },
-          { icon: Brain, label: "Problem Solvers" }
-        ].map((item, i) => (
-          <StaggerItem key={i}>
-            <motion.div
-              whileHover={{ y: -6, borderColor: 'rgba(196,192,255,0.3)', backgroundColor: 'rgba(196,192,255,0.05)' }}
-              className="p-6 bg-surface rounded-xl border border-white/5 flex flex-col items-center gap-3 cursor-default transition-colors duration-300"
-            >
-              <motion.div whileHover={{ rotate: 10, scale: 1.2 }} transition={{ type: 'spring', stiffness: 300 }}>
-                <item.icon className="w-6 h-6 text-primary" />
-              </motion.div>
-              <span className="font-display text-xs uppercase font-bold tracking-wider">{item.label}</span>
-            </motion.div>
-          </StaggerItem>
-        ))}
-      </StaggerContainer>
-
-      <FadeInUp delay={0.1}>
-        <motion.div
-          whileHover={{ borderColor: 'rgba(196,192,255,0.2)' }}
-          className="p-8 bg-surface rounded-2xl border border-primary/10 text-center transition-colors duration-300"
-        >
-          <p className="text-muted italic">
-            We look for 'The Tinkerer'. People who buy domain names before they have a plan.
-            People who spend weekends debugging things for fun. The relentless ones.
-          </p>
-        </motion.div>
-      </FadeInUp>
-    </div>
-  </section>
-);
-
-// ── Apply Form ────────────────────────────────────────────────────────────────
-const ApplyForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    university: '',
-    city: '',
-    skills: '',
-    interests: '',
-    motivation: ''
-  });
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus('loading');
-
-    // ── Replace this URL with your Google Apps Script Web App URL ──
-    const GOOGLE_SCRIPT_URL = import.meta.env.VITE_GOOGLE_SCRIPT_URL || '';
-
-    if (!GOOGLE_SCRIPT_URL) {
-      // If no URL configured, just show success (demo mode)
-      setTimeout(() => setStatus('success'), 800);
-      return;
-    }
-
-    try {
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-      setStatus('success');
-    } catch {
-      setStatus('error');
-    }
-  };
-
-  const inputClass = "w-full bg-surface border border-white/5 rounded-lg p-4 focus:ring-2 focus:ring-primary/40 focus:outline-none text-ink transition-all duration-200 hover:border-white/10 focus:border-primary/40";
-
-  if (status === 'success') {
-    return (
-      <section className="py-32 px-6 bg-surface/20" id="apply">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="text-center py-24"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-            >
-              <CheckCircle className="w-20 h-20 text-tertiary mx-auto mb-6" />
-            </motion.div>
-            <h2 className="text-4xl font-black tracking-tight mb-4">Application Received!</h2>
-            <p className="text-muted text-lg">We'll be in touch soon. Keep building.</p>
-          </motion.div>
-        </div>
-      </section>
-    );
-  }
-
+function Hero() {
   return (
-    <section className="py-32 px-6 bg-surface/20" id="apply">
-      <div className="max-w-3xl mx-auto">
-        <FadeInUp className="text-center mb-16">
-          <h2 className="text-4xl font-black tracking-tight mb-4">Apply to the Pilot Builder Program</h2>
-          <p className="text-muted">Join the next cohort of student founders.</p>
+    <section id="top" className="relative overflow-hidden px-4 pb-16 pt-28 sm:px-6 sm:pb-24 sm:pt-32">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(196,192,255,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(78,222,163,0.18),transparent_25%)]" />
+      <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.15fr_0.85fr]">
+        <FadeInUp className="max-w-3xl">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 py-1.5">
+            <span className="h-2 w-2 rounded-full bg-tertiary" />
+            <span className="text-[11px] font-display uppercase tracking-[0.28em] text-primary">Applications open now</span>
+          </div>
+
+          <h1 className="max-w-4xl text-4xl font-black leading-[0.92] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            Find the right cofounder and start building faster.
+          </h1>
+          <p className="mt-6 max-w-2xl text-base leading-7 text-muted sm:text-lg">
+            Buildr is a curated startup community for student builders who want strong teammates, real momentum, and sharper feedback.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+            <a
+              href="#apply"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-7 py-4 text-sm font-black uppercase tracking-[0.18em] text-background transition-transform hover:-translate-y-0.5"
+            >
+              Apply now
+            </a>
+            <a
+              href="#program"
+              className="inline-flex items-center justify-center rounded-full border border-white/12 bg-white/3 px-7 py-4 text-sm font-display uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/8"
+            >
+              Explore program
+            </a>
+          </div>
         </FadeInUp>
 
-        <FadeInUp delay={0.1}>
-          <form className="space-y-8" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { label: 'Full Name', key: 'name', placeholder: 'Avery Chen', type: 'text' },
-                { label: 'College / University', key: 'university', placeholder: 'Stanford University', type: 'text' },
-                { label: 'City', key: 'city', placeholder: 'Palo Alto', type: 'text' },
-                { label: 'Primary Skills', key: 'skills', placeholder: 'React, Figma, Python...', type: 'text' },
-              ].map(({ label, key, placeholder, type }) => (
-                <motion.div key={key} className="space-y-2" whileHover={{ scale: 1.01 }} transition={{ type: 'spring', stiffness: 400 }}>
-                  <label className="font-display text-xs uppercase tracking-widest text-muted">{label}</label>
-                  <input
-                    type={type}
-                    className={inputClass}
-                    placeholder={placeholder}
-                    value={formData[key as keyof typeof formData]}
-                    onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                    required
-                  />
-                </motion.div>
-              ))}
+        <FadeInUp className="lg:justify-self-end">
+          <div className="relative mx-auto max-w-md rounded-[2rem] border border-white/10 bg-white/5 p-5 shadow-[0_30px_120px_rgba(0,0,0,0.45)] backdrop-blur-xl sm:p-7">
+            <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent" />
+            <div className="grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
+              <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-[1.5rem] bg-white p-3 shadow-[0_18px_40px_rgba(255,255,255,0.12)] sm:h-32 sm:w-32">
+                <img src={buildersClubLogo} alt="Builders Club crest" className="h-full w-full object-contain" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-xs font-display uppercase tracking-[0.3em] text-tertiary">Builders Club</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">Buildr</h2>
+                <p className="mt-3 text-sm leading-6 text-muted">
+                  Built for students who already tinker, prototype, and want to meet the people serious enough to ship beside them.
+                </p>
+              </div>
             </div>
 
-            <motion.div className="space-y-2" whileHover={{ scale: 1.005 }} transition={{ type: 'spring', stiffness: 400 }}>
-              <label className="font-display text-xs uppercase tracking-widest text-muted">Interests & Industries</label>
-              <input
-                type="text"
-                className={inputClass}
-                placeholder="Fintech, AI agents, EdTech..."
-                value={formData.interests}
-                onChange={(e) => setFormData({ ...formData, interests: e.target.value })}
-                required
-              />
-            </motion.div>
-
-            <motion.div className="space-y-2" whileHover={{ scale: 1.005 }} transition={{ type: 'spring', stiffness: 400 }}>
-              <label className="font-display text-xs uppercase tracking-widest text-muted">Motivation</label>
-              <textarea
-                className={inputClass}
-                placeholder="Tell us about the coolest thing you've built..."
-                rows={4}
-                value={formData.motivation}
-                onChange={(e) => setFormData({ ...formData, motivation: e.target.value })}
-                required
-              />
-            </motion.div>
-
-            {status === 'error' && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-400 text-sm text-center">
-                Something went wrong. Please try again.
-              </motion.p>
-            )}
-
-            <motion.button
-              whileHover={{ scale: 1.02, boxShadow: '0 15px 40px rgba(196,192,255,0.4)' }}
-              whileTap={{ scale: 0.98 }}
-              disabled={status === 'loading'}
-              className="w-full py-5 bg-primary text-background font-black rounded-full text-lg shadow-[0_10px_30px_rgba(196,192,255,0.2)] transition-shadow duration-300 disabled:opacity-70 flex items-center justify-center gap-3"
-            >
-              {status === 'loading' ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Submitting...
-                </>
-              ) : 'Apply Now'}
-            </motion.button>
-          </form>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-background/60 p-4">
+                <p className="text-xs font-display uppercase tracking-[0.24em] text-primary">Format</p>
+                <p className="mt-2 text-sm text-white">Weekly build rhythm and founder matching</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-background/60 p-4">
+                <p className="text-xs font-display uppercase tracking-[0.24em] text-primary">Who it fits</p>
+                <p className="mt-2 text-sm text-white">Developers, designers, and ambitious student operators</p>
+              </div>
+            </div>
+          </div>
         </FadeInUp>
       </div>
     </section>
   );
-};
+}
 
-// ── Footer ────────────────────────────────────────────────────────────────────
-const Footer = () => (
-  <footer className="bg-background border-t border-white/5 py-12 px-6">
-    <div className="flex flex-col md:flex-row justify-between items-center gap-8 max-w-7xl mx-auto">
-      <div className="flex items-center gap-2">
-        <Terminal className="text-primary w-5 h-5" />
-        <span className="text-primary font-bold uppercase tracking-tighter">PILOT LAB</span>
-      </div>
-      <p className="text-[10px] font-medium font-display tracking-widest uppercase text-white/40">
-        © 2024 PILOT LAB. BUILT FOR THE NEXT GENERATION.
-      </p>
-      <div className="flex gap-6">
-        {['Privacy', 'Terms'].map(label => (
-          <motion.a key={label} href="#" whileHover={{ y: -1 }} className="text-white/40 hover:text-tertiary transition-colors text-[12px] font-medium font-display tracking-widest uppercase">{label}</motion.a>
-        ))}
-        <motion.a href="#" whileHover={{ scale: 1.2, color: '#4edea3' }} className="text-white/40 transition-colors"><Twitter className="w-4 h-4" /></motion.a>
-        <motion.a href="#" whileHover={{ scale: 1.2, color: '#4edea3' }} className="text-white/40 transition-colors"><Github className="w-4 h-4" /></motion.a>
-      </div>
-    </div>
-  </footer>
-);
+function Problem() {
+  return (
+    <section className="px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-7xl">
+        <FadeInUp className="max-w-2xl">
+          <p className="text-xs font-display uppercase tracking-[0.28em] text-primary">Why this exists</p>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Most student startups fail before the first real sprint.</h2>
+        </FadeInUp>
 
-// ── App ───────────────────────────────────────────────────────────────────────
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          {problemCards.map(({ icon: Icon, title, desc }) => (
+            <motion.div
+              key={title}
+              whileHover={{ y: -6 }}
+              className="rounded-[1.75rem] border border-white/8 bg-surface/80 p-6 shadow-[0_10px_40px_rgba(0,0,0,0.18)]"
+            >
+              <Icon className="h-10 w-10 text-primary" />
+              <h3 className="mt-5 text-xl font-bold text-white">{title}</h3>
+              <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Program() {
+  return (
+    <section id="program" className="border-y border-white/8 bg-surface/35 px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+          <FadeInUp className="max-w-xl">
+            <p className="text-xs font-display uppercase tracking-[0.28em] text-tertiary">Program design</p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">A focused system for finding teammates and shipping together.</h2>
+            <p className="mt-5 text-base leading-7 text-muted">
+              The program is designed to reduce random networking and replace it with curated matches, weekly pressure, and practical feedback loops.
+            </p>
+          </FadeInUp>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-[1.75rem] border border-primary/16 bg-background/78 p-6 sm:col-span-2">
+              <h3 className="text-2xl font-black tracking-tight text-white">Cofounder matching</h3>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted sm:text-base">
+                Applicants are matched on skill overlap, working style, startup intent, and what each person can contribute in the first few weeks.
+              </p>
+            </div>
+            <div className="rounded-[1.75rem] border border-white/8 bg-background/70 p-6">
+              <h3 className="text-xl font-bold text-white">Weekly build sessions</h3>
+              <p className="mt-3 text-sm leading-7 text-muted">Short cycles keep teams moving from conversation to actual prototypes.</p>
+            </div>
+            <div className="rounded-[1.75rem] border border-white/8 bg-background/70 p-6">
+              <h3 className="text-xl font-bold text-white">Founder feedback</h3>
+              <p className="mt-3 text-sm leading-7 text-muted">Mentors and peers give grounded feedback on execution, not vague encouragement.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-3">
+          {stepCards.map(({ step, title, desc }) => (
+            <div key={step} className="rounded-[1.75rem] border border-white/8 bg-background/68 p-6">
+              <p className="text-sm font-display uppercase tracking-[0.28em] text-primary">{step}</p>
+              <h3 className="mt-5 text-2xl font-black tracking-tight text-white">{title}</h3>
+              <p className="mt-3 text-sm leading-7 text-muted sm:text-base">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Criteria() {
+  return (
+    <section id="criteria" className="px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-6xl">
+        <FadeInUp className="mx-auto max-w-3xl text-center">
+          <p className="text-xs font-display uppercase tracking-[0.28em] text-primary">Who should apply</p>
+          <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">This is for people who already have the instinct to build.</h2>
+          <p className="mt-5 text-base leading-7 text-muted">
+            You do not need a finished startup idea. You do need curiosity, initiative, and the ability to follow through.
+          </p>
+        </FadeInUp>
+
+        <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
+          {criteriaCards.map(({ icon: Icon, label }) => (
+            <motion.div
+              key={label}
+              whileHover={{ y: -4 }}
+              className="rounded-[1.5rem] border border-white/8 bg-surface/70 p-5 text-center"
+            >
+              <Icon className="mx-auto h-8 w-8 text-tertiary" />
+              <p className="mt-4 text-xs font-display uppercase tracking-[0.2em] text-white sm:text-sm">{label}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ApplyForm() {
+  const [formData, setFormData] = useState<ApplicationForm>(initialForm);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const inputClass =
+    'w-full rounded-2xl border border-white/10 bg-background/80 px-4 py-3.5 text-sm text-white outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20';
+
+  const setField = (key: keyof ApplicationForm, value: string) => {
+    setFormData((current) => ({ ...current, [key]: value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to submit your application.');
+      }
+
+      setStatus('success');
+      setFormData(initialForm);
+    } catch (error) {
+      setStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Unable to submit your application.');
+    }
+  };
+
+  return (
+    <section id="apply" className="px-4 py-16 sm:px-6 sm:py-24">
+      <div className="mx-auto max-w-6xl">
+        <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <FadeInUp className="rounded-[2rem] border border-white/10 bg-surface/75 p-6 sm:p-8">
+            <p className="text-xs font-display uppercase tracking-[0.28em] text-tertiary">Apply</p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Send your builder profile.</h2>
+            <p className="mt-5 text-base leading-7 text-muted">
+              When someone submits this form, the app will email the application details to <span className="text-white">shaunakkate87@gmail.com</span>.
+            </p>
+
+            <div className="mt-8 space-y-4">
+              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-background/65 p-4">
+                <Mail className="mt-0.5 h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Direct inbox delivery</p>
+                  <p className="text-sm leading-6 text-muted">Configured through the included Node mail endpoint using your Gmail app password.</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-background/65 p-4">
+                <MapPin className="mt-0.5 h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-white">Responsive form layout</p>
+                  <p className="text-sm leading-6 text-muted">The form stacks cleanly on mobile and expands to two columns on larger screens.</p>
+                </div>
+              </div>
+            </div>
+          </FadeInUp>
+
+          <FadeInUp className="rounded-[2rem] border border-white/10 bg-background/72 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.25)] sm:p-8">
+            {status === 'success' ? (
+              <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
+                <CheckCircle className="h-16 w-16 text-tertiary" />
+                <h3 className="mt-5 text-3xl font-black tracking-tight text-white">Application received</h3>
+                <p className="mt-4 max-w-md text-base leading-7 text-muted">
+                  Your application was sent successfully. You can submit another one if needed.
+                </p>
+                <button
+                  type="button"
+                  className="mt-8 rounded-full border border-white/12 px-6 py-3 text-sm font-display uppercase tracking-[0.2em] text-white"
+                  onClick={() => setStatus('idle')}
+                >
+                  Submit another
+                </button>
+              </div>
+            ) : (
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <label className="space-y-2">
+                    <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Full name</span>
+                    <input className={inputClass} value={formData.name} onChange={(e) => setField('name', e.target.value)} required />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Email</span>
+                    <input type="email" className={inputClass} value={formData.email} onChange={(e) => setField('email', e.target.value)} required />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">College / University</span>
+                    <input className={inputClass} value={formData.university} onChange={(e) => setField('university', e.target.value)} required />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">City</span>
+                    <input className={inputClass} value={formData.city} onChange={(e) => setField('city', e.target.value)} required />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Primary skills</span>
+                    <input className={inputClass} value={formData.skills} onChange={(e) => setField('skills', e.target.value)} required />
+                  </label>
+                  <label className="space-y-2">
+                    <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Interests</span>
+                    <input className={inputClass} value={formData.interests} onChange={(e) => setField('interests', e.target.value)} required />
+                  </label>
+                </div>
+
+                <label className="block space-y-2">
+                  <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Portfolio / LinkedIn</span>
+                  <input
+                    type="url"
+                    className={inputClass}
+                    placeholder="https://"
+                    value={formData.portfolio}
+                    onChange={(e) => setField('portfolio', e.target.value)}
+                    required
+                  />
+                </label>
+
+                <label className="block space-y-2">
+                  <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Why do you want to join?</span>
+                  <textarea
+                    rows={6}
+                    className={`${inputClass} resize-y`}
+                    value={formData.motivation}
+                    onChange={(e) => setField('motivation', e.target.value)}
+                    required
+                  />
+                </label>
+
+                {status === 'error' && <p className="text-sm text-red-300">{errorMessage}</p>}
+
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-background disabled:opacity-70"
+                >
+                  {status === 'loading' ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Sending
+                    </>
+                  ) : (
+                    'Apply now'
+                  )}
+                </button>
+              </form>
+            )}
+          </FadeInUp>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="border-t border-white/8 px-4 py-8 sm:px-6">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
+        <div className="flex items-center gap-3">
+          <img src={buildersClubLogo} alt="Builders Club logo" className="h-10 w-10 rounded-xl bg-white/5 object-contain p-1.5" />
+          <div>
+            <p className="text-sm font-black tracking-tight text-white">Buildr</p>
+            <p className="text-[11px] font-display uppercase tracking-[0.24em] text-muted">Student founder community</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-5 text-white/50">
+          <a href="mailto:shaunakkate87@gmail.com" className="text-xs font-display uppercase tracking-[0.2em] hover:text-white">
+            Contact
+          </a>
+          <a href="#" className="hover:text-white" aria-label="GitHub">
+            <Github className="h-4 w-4" />
+          </a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 export default function App() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background text-ink">
       <Navbar />
       <main>
         <Hero />
         <Problem />
-        <Solution />
-        <ProgramSteps />
+        <Program />
         <Criteria />
         <ApplyForm />
       </main>
