@@ -3,6 +3,8 @@ import { AnimatePresence, motion, useInView } from 'motion/react';
 import {
   Brain,
   CheckCircle,
+  ChevronLeft,
+  ChevronRight,
   Code,
   Github,
   Handshake,
@@ -11,6 +13,7 @@ import {
   Menu,
   Palette,
   Rocket,
+  Sparkles,
   UserSearch,
   X,
 } from 'lucide-react';
@@ -21,6 +24,102 @@ type BaseProps = {
   className?: string;
 };
 
+type PersonalityAnswer = 'a' | 'b' | '';
+
+type PersonalityQuestion = {
+  id: string;
+  dimension: 'EI' | 'SN' | 'TF' | 'JP';
+  question: string;
+  optionA: string;
+  optionB: string;
+  // 'a' maps to E, S, T, J respectively; 'b' maps to I, N, F, P
+};
+
+const personalityQuestions: PersonalityQuestion[] = [
+  // E/I — Where you get your energy
+  {
+    id: 'ei1',
+    dimension: 'EI',
+    question: "You just finished a really long, draining week. How do you recharge over the weekend?",
+    optionA: 'Call up friends, go out, be around people — that fills my battery back up',
+    optionB: 'Stay in, watch something, read, or just be alone for a bit — I need quiet to recover',
+  },
+  {
+    id: 'ei2',
+    dimension: 'EI',
+    question: "You walk into a college fest where you don't know anyone. What happens next?",
+    optionA: "I'll probably end up in a conversation with a stranger within 10 minutes",
+    optionB: "I'll find the one person I know, or observe from the side until something catches my interest",
+  },
+  // S/N — How you take in the world
+  {
+    id: 'sn1',
+    dimension: 'SN',
+    question: "A friend says they want to start something big but has no plan yet. Your first reaction?",
+    optionA: '"Cool — but what exactly will you do this week to start?"',
+    optionB: '"Tell me more — what does the dream version of this look like?"',
+  },
+  {
+    id: 'sn2',
+    dimension: 'SN',
+    question: 'When learning something completely new, you prefer:',
+    optionA: 'Step-by-step tutorials, examples, and practical exercises — show me how it works',
+    optionB: 'The big picture first — why it matters, how it connects to other things, then I figure out the details',
+  },
+  // T/F — How you make decisions
+  {
+    id: 'tf1',
+    dimension: 'TF',
+    question: "Your group project is behind schedule. One teammate hasn't delivered their part because of personal issues. You:",
+    optionA: "Redistribute the work and set a hard deadline — the project can't wait, we deal with it honestly",
+    optionB: "Check in with them first, understand what's going on, and figure out how to help them catch up",
+  },
+  {
+    id: 'tf2',
+    dimension: 'TF',
+    question: "You have to pick between two electives. One is practical and career-useful. The other genuinely excites you but has no obvious career payoff. You pick:",
+    optionA: 'The practical one — I can explore passion projects on my own time',
+    optionB: "The exciting one — if it lights me up, I'll figure out how to make it useful later",
+  },
+  // J/P — How you deal with structure
+  {
+    id: 'jp1',
+    dimension: 'JP',
+    question: "It's Sunday night. How does your week ahead look?",
+    optionA: "Planned out — I've got a to-do list, time blocks, I know what's happening Monday morning",
+    optionB: "I know the big things, but I'll figure out the rest as the week goes — I work better that way",
+  },
+  {
+    id: 'jp2',
+    dimension: 'JP',
+    question: "You're travelling to a new city for the first time. Your approach?",
+    optionA: 'Research beforehand — I like having a rough itinerary, top places marked, transport sorted',
+    optionB: "Land and explore — I'll ask locals, wander around, and let the day take me wherever",
+  },
+];
+
+function computePersonalityType(answers: Record<string, PersonalityAnswer>): string {
+  const scores = { E: 0, I: 0, S: 0, N: 0, T: 0, F: 0, J: 0, P: 0 };
+
+  for (const q of personalityQuestions) {
+    const ans = answers[q.id];
+    if (!ans) continue;
+    if (q.dimension === 'EI') { ans === 'a' ? scores.E++ : scores.I++; }
+    if (q.dimension === 'SN') { ans === 'a' ? scores.S++ : scores.N++; }
+    if (q.dimension === 'TF') { ans === 'a' ? scores.T++ : scores.F++; }
+    if (q.dimension === 'JP') { ans === 'a' ? scores.J++ : scores.P++; }
+  }
+
+  const type = [
+    scores.E >= scores.I ? 'E' : 'I',
+    scores.S >= scores.N ? 'S' : 'N',
+    scores.T >= scores.F ? 'T' : 'F',
+    scores.J >= scores.P ? 'J' : 'P',
+  ].join('');
+
+  return type;
+}
+
 type ApplicationForm = {
   name: string;
   email: string;
@@ -30,6 +129,7 @@ type ApplicationForm = {
   interests: string;
   portfolio: string;
   motivation: string;
+  personalityAnswers: Record<string, PersonalityAnswer>;
 };
 
 const navLinks = [
@@ -90,6 +190,7 @@ const initialForm: ApplicationForm = {
   interests: '',
   portfolio: '',
   motivation: '',
+  personalityAnswers: {},
 };
 
 const FadeInUp = ({ children, className = '' }: BaseProps) => {
@@ -336,28 +437,156 @@ function Criteria() {
   );
 }
 
+function PersonalityStep({
+  answers,
+  onAnswer,
+}: {
+  answers: Record<string, PersonalityAnswer>;
+  onAnswer: (id: string, value: PersonalityAnswer) => void;
+}) {
+  const [currentQ, setCurrentQ] = useState(0);
+  const q = personalityQuestions[currentQ];
+  const total = personalityQuestions.length;
+  const answeredCount = Object.values(answers).filter((v) => v !== '').length;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <Sparkles className="h-5 w-5 text-tertiary" />
+        <p className="text-xs font-display uppercase tracking-[0.24em] text-tertiary">
+          Builder personality — {currentQ + 1} of {total}
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/8">
+        <motion.div
+          className="h-full rounded-full bg-gradient-to-r from-primary to-tertiary"
+          initial={false}
+          animate={{ width: `${((currentQ + 1) / total) * 100}%` }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+        />
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={q.id}
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -24 }}
+          transition={{ duration: 0.3 }}
+        >
+          <p className="text-lg font-bold leading-7 text-white sm:text-xl">{q.question}</p>
+
+          <div className="mt-5 space-y-3">
+            <button
+              type="button"
+              onClick={() => onAnswer(q.id, 'a')}
+              className={`w-full rounded-2xl border px-5 py-4 text-left text-sm leading-6 transition ${
+                answers[q.id] === 'a'
+                  ? 'border-primary/50 bg-primary/12 text-white ring-2 ring-primary/25'
+                  : 'border-white/10 bg-white/3 text-muted hover:border-white/20 hover:bg-white/6 hover:text-white'
+              }`}
+            >
+              {q.optionA}
+            </button>
+            <button
+              type="button"
+              onClick={() => onAnswer(q.id, 'b')}
+              className={`w-full rounded-2xl border px-5 py-4 text-left text-sm leading-6 transition ${
+                answers[q.id] === 'b'
+                  ? 'border-primary/50 bg-primary/12 text-white ring-2 ring-primary/25'
+                  : 'border-white/10 bg-white/3 text-muted hover:border-white/20 hover:bg-white/6 hover:text-white'
+              }`}
+            >
+              {q.optionB}
+            </button>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation */}
+      <div className="flex items-center justify-between pt-2">
+        <button
+          type="button"
+          onClick={() => setCurrentQ((i) => Math.max(0, i - 1))}
+          disabled={currentQ === 0}
+          className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-white disabled:opacity-30"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back
+        </button>
+
+        <span className="text-xs text-muted">{answeredCount} / {total} answered</span>
+
+        {currentQ < total - 1 ? (
+          <button
+            type="button"
+            onClick={() => setCurrentQ((i) => Math.min(total - 1, i + 1))}
+            className="inline-flex items-center gap-2 text-sm text-muted transition hover:text-white"
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
+        ) : (
+          <span className="text-xs text-tertiary font-display uppercase tracking-widest">
+            {answeredCount === total ? '✓ Complete' : ''}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ApplyForm() {
   const [formData, setFormData] = useState<ApplicationForm>(initialForm);
+  const [step, setStep] = useState<'info' | 'personality'>('info');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
   const inputClass =
     'w-full rounded-2xl border border-white/10 bg-background/80 px-4 py-3.5 text-sm text-white outline-none transition focus:border-primary/50 focus:ring-2 focus:ring-primary/20';
 
-  const setField = (key: keyof ApplicationForm, value: string) => {
+  const setField = (key: keyof Omit<ApplicationForm, 'personalityAnswers'>, value: string) => {
     setFormData((current) => ({ ...current, [key]: value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const setPersonalityAnswer = (id: string, value: PersonalityAnswer) => {
+    setFormData((current) => ({
+      ...current,
+      personalityAnswers: { ...current.personalityAnswers, [id]: value },
+    }));
+  };
+
+  const allPersonalityAnswered =
+    personalityQuestions.every((q) => formData.personalityAnswers[q.id] && formData.personalityAnswers[q.id] !== '');
+
+  const handleInfoNext = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setStep('personality');
+  };
+
+  const handleSubmit = async () => {
     setStatus('loading');
     setErrorMessage('');
+
+    const personalityType = computePersonalityType(formData.personalityAnswers);
+
+    // Build detailed answer map: question text → selected answer text
+    const personalityDetails: Record<string, string> = {};
+    for (const q of personalityQuestions) {
+      const ans = formData.personalityAnswers[q.id];
+      if (ans === 'a') personalityDetails[q.question] = q.optionA;
+      else if (ans === 'b') personalityDetails[q.question] = q.optionB;
+    }
 
     try {
       const response = await fetch('/api/apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          personalityType,
+          personalityDetails,
+        }),
       });
 
       const data = (await response.json()) as { error?: string };
@@ -368,6 +597,7 @@ function ApplyForm() {
 
       setStatus('success');
       setFormData(initialForm);
+      setStep('info');
     } catch (error) {
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Unable to submit your application.');
@@ -400,6 +630,13 @@ function ApplyForm() {
                   <p className="text-sm leading-6 text-muted">We are building a community where ambitious students can learn in public, find strong teammates, and keep each other moving.</p>
                 </div>
               </div>
+              <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-background/65 p-4">
+                <Sparkles className="mt-0.5 h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold text-white">We learn how you think</p>
+                  <p className="text-sm leading-6 text-muted">Quick scenario questions help us understand your builder personality — so we can match you with the right kind of cofounder.</p>
+                </div>
+              </div>
             </div>
           </FadeInUp>
 
@@ -414,13 +651,22 @@ function ApplyForm() {
                 <button
                   type="button"
                   className="mt-8 rounded-full border border-white/12 px-6 py-3 text-sm font-display uppercase tracking-[0.2em] text-white"
-                  onClick={() => setStatus('idle')}
+                  onClick={() => { setStatus('idle'); setStep('info'); }}
                 >
                   Submit another
                 </button>
               </div>
-            ) : (
-              <form className="space-y-5" onSubmit={handleSubmit}>
+            ) : step === 'info' ? (
+              <form className="space-y-5" onSubmit={handleInfoNext}>
+                {/* Step indicator */}
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">1</span>
+                  <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Your details</span>
+                  <span className="mx-1 h-px flex-1 bg-white/10" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-white/15 text-xs font-bold text-muted">2</span>
+                  <span className="text-xs font-display uppercase tracking-[0.24em] text-muted/50">Personality</span>
+                </div>
+
                 <div className="grid gap-5 md:grid-cols-2">
                   <label className="space-y-2">
                     <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Full name</span>
@@ -463,7 +709,7 @@ function ApplyForm() {
                 <label className="block space-y-2">
                   <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Why do you want to join?</span>
                   <textarea
-                    rows={6}
+                    rows={4}
                     className={`${inputClass} resize-y`}
                     value={formData.motivation}
                     onChange={(e) => setField('motivation', e.target.value)}
@@ -471,23 +717,56 @@ function ApplyForm() {
                   />
                 </label>
 
-                {status === 'error' && <p className="text-sm text-red-300">{errorMessage}</p>}
-
                 <button
                   type="submit"
-                  disabled={status === 'loading'}
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-background disabled:opacity-70"
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-background"
                 >
-                  {status === 'loading' ? (
-                    <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Sending
-                    </>
-                  ) : (
-                    'Apply now'
-                  )}
+                  Next — Builder personality <ChevronRight className="h-4 w-4" />
                 </button>
               </form>
+            ) : (
+              <div className="space-y-5">
+                {/* Step indicator */}
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-tertiary/40 text-xs font-bold text-tertiary">✓</span>
+                  <span className="text-xs font-display uppercase tracking-[0.24em] text-tertiary/60">Your details</span>
+                  <span className="mx-1 h-px flex-1 bg-white/10" />
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">2</span>
+                  <span className="text-xs font-display uppercase tracking-[0.24em] text-muted">Personality</span>
+                </div>
+
+                <PersonalityStep
+                  answers={formData.personalityAnswers}
+                  onAnswer={setPersonalityAnswer}
+                />
+
+                {status === 'error' && <p className="text-sm text-red-300">{errorMessage}</p>}
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep('info')}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/12 px-5 py-4 text-sm font-display uppercase tracking-[0.18em] text-white"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Back
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!allPersonalityAnswered || status === 'loading'}
+                    onClick={handleSubmit}
+                    className="inline-flex flex-1 items-center justify-center gap-3 rounded-full bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.18em] text-background disabled:opacity-40"
+                  >
+                    {status === 'loading' ? (
+                      <>
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        Sending
+                      </>
+                    ) : (
+                      'Submit application'
+                    )}
+                  </button>
+                </div>
+              </div>
             )}
           </FadeInUp>
         </div>

@@ -27,6 +27,9 @@ type ApplicationPayload = {
   interests?: string;
   portfolio?: string;
   motivation?: string;
+  personalityType?: string;
+  personalityAnswers?: Record<string, string>;
+  personalityDetails?: Record<string, string>;
 };
 
 const requiredFields: Array<keyof ApplicationPayload> = [
@@ -69,6 +72,17 @@ app.post('/api/apply', async (req, res) => {
     },
   });
 
+  const personalityType = payload.personalityType || 'Not provided';
+  const personalityDetails = payload.personalityDetails || {};
+
+  // Build plain-text personality breakdown
+  const personalityLines: string[] = [];
+  for (const [question, answer] of Object.entries(personalityDetails)) {
+    personalityLines.push(`Q: ${question}`);
+    personalityLines.push(`→ ${answer}`);
+    personalityLines.push('');
+  }
+
   const lines = [
     `Name: ${payload.name}`,
     `Email: ${payload.email}`,
@@ -80,18 +94,38 @@ app.post('/api/apply', async (req, res) => {
     '',
     'Motivation:',
     payload.motivation || '',
+    '',
+    `Builder Personality Type: ${personalityType}`,
+    '',
+    'Personality Answers:',
+    ...personalityLines,
   ];
+
+  // Build HTML personality breakdown
+  const personalityHtml = Object.entries(personalityDetails)
+    .map(
+      ([question, answer]) =>
+        `<div style="margin-bottom: 16px; padding: 12px 16px; background: #f9fafb; border-left: 3px solid #6366f1; border-radius: 4px;">
+          <p style="margin: 0 0 6px 0; font-weight: 600; color: #374151; font-size: 14px;">${question}</p>
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">→ ${answer}</p>
+        </div>`
+    )
+    .join('\n');
 
   try {
     await transporter.sendMail({
       from: smtpUser,
       to: toEmail,
       replyTo: payload.email,
-      subject: `New Builders Club application from ${payload.name}`,
+      subject: `[${personalityType}] New Builders Club application from ${payload.name}`,
       text: lines.join('\n'),
       html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
-          <h2>New Builders Club application</h2>
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; max-width: 640px;">
+          <h2 style="margin-bottom: 4px;">New Builders Club application</h2>
+          <p style="margin-top: 0; color: #6b7280; font-size: 14px;">Personality type: <strong style="color: #6366f1; font-size: 16px;">${personalityType}</strong></p>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
+
           <p><strong>Name:</strong> ${payload.name}</p>
           <p><strong>Email:</strong> ${payload.email}</p>
           <p><strong>University:</strong> ${payload.university}</p>
@@ -99,8 +133,16 @@ app.post('/api/apply', async (req, res) => {
           <p><strong>Skills:</strong> ${payload.skills}</p>
           <p><strong>Interests:</strong> ${payload.interests}</p>
           <p><strong>Portfolio:</strong> <a href="${payload.portfolio}">${payload.portfolio}</a></p>
-          <p><strong>Motivation:</strong></p>
-          <p>${payload.motivation?.replace(/\n/g, '<br />')}</p>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
+
+          <p><strong>Why they want to join:</strong></p>
+          <p style="padding: 12px 16px; background: #f9fafb; border-radius: 6px;">${payload.motivation?.replace(/\n/g, '<br />')}</p>
+
+          <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;" />
+
+          <h3 style="margin-bottom: 16px;">Personality Breakdown — ${personalityType}</h3>
+          ${personalityHtml}
         </div>
       `,
     });
