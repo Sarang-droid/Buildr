@@ -8,8 +8,6 @@ import {
   Handshake,
   Lightbulb,
   Loader2,
-  Mail,
-  MapPin,
   Menu,
   Palette,
   Rocket,
@@ -384,22 +382,22 @@ function ApplyForm() {
             <p className="text-xs font-display uppercase tracking-[0.28em] text-tertiary">Apply</p>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-5xl">Send your builder profile.</h2>
             <p className="mt-5 text-base leading-7 text-muted">
-              When someone submits this form, the app will email the application details to <span className="text-white">shaunakkate87@gmail.com</span>.
+              Tell us what you are building, what kind of collaborators you want to meet, and how you hope to contribute to the community.
             </p>
 
             <div className="mt-8 space-y-4">
               <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-background/65 p-4">
-                <Mail className="mt-0.5 h-5 w-5 text-primary" />
+                <Handshake className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Direct inbox delivery</p>
-                  <p className="text-sm leading-6 text-muted">Configured through the included Node mail endpoint using your Gmail app password.</p>
+                  <p className="text-sm font-semibold text-white">Built for real collaboration</p>
+                  <p className="text-sm leading-6 text-muted">This application helps us bring together builders who want to share ideas, trade feedback, and start things together.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-white/8 bg-background/65 p-4">
-                <MapPin className="mt-0.5 h-5 w-5 text-primary" />
+                <Lightbulb className="mt-0.5 h-5 w-5 text-primary" />
                 <div>
-                  <p className="text-sm font-semibold text-white">Responsive form layout</p>
-                  <p className="text-sm leading-6 text-muted">The form stacks cleanly on mobile and expands to two columns on larger screens.</p>
+                  <p className="text-sm font-semibold text-white">Community-first energy</p>
+                  <p className="text-sm leading-6 text-muted">We are building a community where ambitious students can learn in public, find strong teammates, and keep each other moving.</p>
                 </div>
               </div>
             </div>
